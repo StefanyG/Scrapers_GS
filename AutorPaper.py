@@ -36,17 +36,20 @@ for url in urls:
         name_attributes = soup.find_all('div', attrs={'class': 'gsc_prf_il'})
         affiliation = name_attributes[0].text or ''
         interests = name_attributes[2].text or ''
-        
-        email = name_attributes[1].text or ''
-        verified, mail = email.split('Verified email at')
-        dom, cl = mail.split('.')
         link = soup.find('a', attrs={'class': 'gsc_prf_ila'})
         l = link.get('href')
         id_u = l.split('=')[-1] or ''
         article = soup.find('tr', {'class': 'gsc_a_tr'})
         research_article = soup.find_all('tr',{'class':'gsc_a_tr'})
-        #print(name)
-                    
+
+        email = name_attributes[1].text
+        try:
+            verified, mail = email.split('Verified email at ')
+            dom, cl = mail.split('.')
+        except:
+            d, c= email.split('Verified email at ')
+            unod, dom, tresd =c.split('.')
+                     
         for i, article_info in enumerate(research_article, 1):
             try:
                 pub_details = article_info.find('td', attrs={'class': 'gsc_a_t'})
@@ -72,7 +75,7 @@ for url in urls:
                 cur.execute("""INSERT OR IGNORE INTO Autor (Id_AutorGS, Nombre_Autor, Cargo, Dominio, 
                     Intereses, Link, Id_InstitucionGS) VALUES (?, ?, ?, ?, ?, ?,?)""", tablaautor)
                 cur.execute("""INSERT OR IGNORE INTO Instituciones (Id_InstitucionGS) VALUES (?)""", [id_u])
-                print(f'Data inserted: {id_a}')
+               # print(f'Data inserted: {id_a}')
                 #id = cur.lastrowid
                 cur.execute("""INSERT OR IGNORE INTO Autor_Paper (Id_AutorGS, Titulo_Paper, Autores_Paper, Revista, 
                     Citado_Por, Año, Link_Paper) VALUES ( ?, ?, ?, ?, ?, ?, ?)""",[ id_a, title, authors, 
@@ -121,29 +124,27 @@ for url in urls:
                     conn.commit()   
         except:
             pass
-    try:  
-        for coautho in soup.find('ul', class_='gsc_rsb_a'):
-            nameco = coautho.find('a', attrs={'tabindex': '-1'})
-            coautor = nameco.text or ''
-            l = nameco.get('href')
-            c = l.split('=')[1]
-            idco = c.split('&')[-2] or ''
-            inst = coautho.find('span', attrs={'class': 'gsc_rsb_a_ext'}).text or ''
-            dominio = coautho.find(class_='gsc_rsb_a_ext gsc_rsb_a_ext2').get_text()
-            ver, mai = dominio.split('Verified email at')
-            do, c = mai.split('.')
-            idpaper = article.find('a', attrs={'class': 'gsc_a_at'})
-            d = idpaper.get('data-href')
-            linkpaper = urllib.parse.urljoin("https://scholar.google.com", d)
-            parsed = urllib.parse.urlparse(d)
-            idp = linkpaper.split(':')[-1]  # id paper
-            idp_a = linkpaper.split('=')[-1]  # id paper-autor
-            id_a = idp_a.split(':')[-2]
-            tablacoautor=([idco, coautor, inst, do, id_a])
-            print(do)
+        try:  
+            for coautho in soup.find('ul', class_='gsc_rsb_a'):
+                nameco = coautho.find('a', attrs={'tabindex': '-1'})
+                coautor = nameco.text or ''
+                l = nameco.get('href')
+                c = l.split('=')[1]
+                idco = c.split('&')[-2] or ''
+                inst = coautho.find('span', attrs={'class': 'gsc_rsb_a_ext'}).text or ''
+                
+                try:
+                    dominioc = coautho.find(class_='gsc_rsb_a_ext gsc_rsb_a_ext2').get_text()
+            
+                    verc, maic = dominioc.split('Verified email at ')
+                    doc, cc = maic.split('.')
+                    print(dominioc)
+                except:
+                    pass
+                tablacoautor=([idco, coautor, inst, doc, id_a])
 
-            cur.execute("""INSERT INTO Coautores (Id_Coautor, Nombre_Coautor, Cargo, Dominio,
-            Id_AutorGS) VALUES (?, ?, ?, ?, ?)""", tablacoautor)
-            conn.commit()
-    except:
-        pass
+                cur.execute("""INSERT INTO Coautores (Id_Coautor, Nombre_Coautor, Cargo, Dominio,
+                    Id_AutorGS) VALUES (?, ?, ?, ?, ?)""", tablacoautor)
+                conn.commit()
+        except:
+            pass
